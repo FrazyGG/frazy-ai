@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frazy AI</title>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+body{margin:0;font-family:Arial;background:#0f172a;color:#e5e7eb}
+header{padding:12px;background:#020617;display:flex;justify-content:space-between}
+.chat{padding:16px;max-width:800px;margin:auto;padding-bottom:90px}
+.msg{margin-bottom:14px;white-space:pre-wrap}
+.user{color:#22d3ee}
+.ai{color:#a5b4fc}
+.input-box{position:fixed;bottom:0;left:0;right:0;background:#020617;padding:12px}
+input{width:100%;padding:12px;border-radius:10px;border:none}
+.login{text-align:center;margin-top:120px}
+</style>
+</head>
+
+<body>
+
+<header>
+  <b>Frazy AI</b>
+  <span>Created by RizkycCuyy</span>
+</header>
+
+<div class="login" id="login">
+  <h2>Login Google</h2>
+
+  <div id="g_id_onload"
+    data-client_id="852236363648-ljr2sgld587f9sent3t6g3taen6m2p70.apps.googleusercontent.com"
+    data-callback="onLogin">
+  </div>
+
+  <div class="g_id_signin"></div>
+</div>
+
+<div class="chat" id="chat" style="display:none"></div>
+
+<div class="input-box" id="inputBox" style="display:none">
+  <input id="input" placeholder="Ketik pesan lalu Enter">
+</div>
+
+<script>
+let messages = [
+  { role: "system", content: "You are Frazy AI, a helpful assistant." }
+];
+
+function onLogin(res){
+  document.getElementById('login').style.display="none";
+  document.getElementById('chat').style.display="block";
+  document.getElementById('inputBox').style.display="block";
+}
+
+const input = document.getElementById("input");
+const chat = document.getElementById("chat");
+
+input.addEventListener("keydown", async e=>{
+  if(e.key !== "Enter") return;
+
+  const text = input.value.trim();
+  if(!text) return;
+
+  input.value="";
+  add("User: "+text,"user");
+
+  messages.push({ role:"user", content:text });
+  add("Frazy AI sedang mengetik...","ai");
+
+  const res = await fetch("/api/chat",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ messages })
+  });
+
+  const data = await res.json();
+  chat.lastChild.remove();
+
+  add("Frazy: "+data.reply,"ai");
+  messages.push({ role:"assistant", content:data.reply });
+});
+
+function add(text,cls){
+  const d=document.createElement("div");
+  d.className="msg "+cls;
+  d.innerText=text;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+}
+</script>
+
+</body>
+</html>
