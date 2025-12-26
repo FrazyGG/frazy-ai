@@ -1,96 +1,149 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Frazy AI</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Frazy AI</title>
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --text: #000;
+      --box: #ffffff;
+      --input: #eaeaea;
+    }
 
-<style>
-body{margin:0;font-family:Arial;background:#0f172a;color:#e5e7eb}
-header{padding:12px;background:#020617;display:flex;justify-content:space-between}
-.chat{padding:16px;max-width:800px;margin:auto;padding-bottom:90px}
-.msg{margin-bottom:14px;white-space:pre-wrap}
-.user{color:#22d3ee}
-.ai{color:#a5b4fc}
-.input-box{position:fixed;bottom:0;left:0;right:0;background:#020617;padding:12px}
-input{width:100%;padding:12px;border-radius:10px;border:none}
-.login{text-align:center;margin-top:120px}
-</style>
+    body.dark {
+      --bg: #0f172a;
+      --text: #fff;
+      --box: #1e293b;
+      --input: #334155;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 12px 16px;
+      background: var(--box);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #chat {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .msg {
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .user {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .ai {
+      background: var(--box);
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 4px;
+    }
+
+    footer {
+      display: flex;
+      padding: 12px;
+      background: var(--box);
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      background: var(--input);
+      color: var(--text);
+    }
+
+    footer button {
+      margin-left: 8px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: white;
+    }
+
+    small {
+      display: block;
+      text-align: center;
+      padding: 6px;
+      opacity: 0.6;
+    }
+  </style>
 </head>
 
 <body>
+  <header>
+    <div>🤖 Frazy AI</div>
+    <button onclick="toggleTheme()">🌗</button>
+  </header>
 
-<header>
-  <b>Frazy AI</b>
-  <span>Created by RizkycCuyy</span>
-</header>
-
-<div class="login" id="login">
-  <h2>Login Google</h2>
-
-  <div id="g_id_onload"
-    data-client_id="852236363648-ljr2sgld587f9sent3t6g3taen6m2p70.apps.googleusercontent.com"
-    data-callback="onLogin">
+  <div id="chat">
+    <div class="msg ai">Halo! Aku Frazy AI 🤖<br>Siap bantu apa saja.</div>
   </div>
 
-  <div class="g_id_signin"></div>
-</div>
+  <footer>
+    <input id="input" placeholder="Ketik pesan..." onkeydown="if(event.key==='Enter') sendMessage()" />
+    <button onclick="sendMessage()">Kirim</button>
+  </footer>
 
-<div class="chat" id="chat" style="display:none"></div>
+  <small>Created by RizkycCuyy</small>
 
-<div class="input-box" id="inputBox" style="display:none">
-  <input id="input" placeholder="Ketik pesan lalu Enter">
-</div>
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+    }
 
-<script>
-let messages = [
-  { role: "system", content: "You are Frazy AI, a helpful assistant." }
-];
+    async function sendMessage() {
+      const input = document.getElementById("input");
+      const message = input.value.trim();
+      if (!message) return;
 
-function onLogin(res){
-  document.getElementById('login').style.display="none";
-  document.getElementById('chat').style.display="block";
-  document.getElementById('inputBox').style.display="block";
-}
+      input.value = "";
 
-const input = document.getElementById("input");
-const chat = document.getElementById("chat");
+      const chat = document.getElementById("chat");
+      chat.innerHTML += `<div class="msg user">${message}</div>`;
 
-input.addEventListener("keydown", async e=>{
-  if(e.key !== "Enter") return;
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message })
+      });
 
-  const text = input.value.trim();
-  if(!text) return;
-
-  input.value="";
-  add("User: "+text,"user");
-
-  messages.push({ role:"user", content:text });
-  add("Frazy AI sedang mengetik...","ai");
-
-  const res = await fetch("/api/chat",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ messages })
-  });
-
-  const data = await res.json();
-  chat.lastChild.remove();
-
-  add("Frazy: "+data.reply,"ai");
-  messages.push({ role:"assistant", content:data.reply });
-});
-
-function add(text,cls){
-  const d=document.createElement("div");
-  d.className="msg "+cls;
-  d.innerText=text;
-  chat.appendChild(d);
-  chat.scrollTop=chat.scrollHeight;
-}
-</script>
-
+      const data = await res.json();
+      chat.innerHTML += `<div class="msg ai">${data.reply}</div>`;
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
 </body>
 </html>
